@@ -29,6 +29,6 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-  ],
+, "worker/worker.js", "worker/db.js"  ],
   "exclude": ["node_modules"]
 }

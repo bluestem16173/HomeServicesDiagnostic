@@ -1,0 +1,14 @@
+# fly.toml app configuration file generated for worker-twilight-silence-8240 on 2026-04-22T18:12:22-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "worker-twilight-silence-8240"
+primary_region = "iad"
+
+[processes]
+worker = "node app.js"
+
+[[vm]]
+memory = "256mb"
+cpus = 1

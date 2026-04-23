@@ -1,0 +1,58 @@
+{
+  "slug": "/hvac/ac-not-cooling",
+  "page_type": "cluster",
+  "content": {
+    "title": "AC Not Cooling: What It Usually Means",
+    "body": "When an air conditioning system is running but not cooling, it typically indicates a breakdown in heat transfer rather than a simple on/off failure. The system may appear operational—fans spinning, thermostat active—but the underlying cooling cycle is not functioning correctly.\n\nIn most cases, the issue is not that the system has stopped, but that it has lost the ability to remove heat from the indoor air. This often points to refrigerant problems, airflow restrictions, or component failures that prevent the system from maintaining the required temperature differential.\n\nA system that runs continuously without cooling should not be ignored. Continued operation under these conditions can increase wear on critical components and lead to more expensive failures, especially if the root cause involves refrigerant loss or compressor strain.\n\nUnderstanding what is actually failing inside the system is the key step. Some symptoms can be safely observed by a homeowner, but many of the underlying causes require proper diagnostic tools and should not be addressed without professional equipment.",
+    "summary": "An AC that runs but does not cool usually indicates a failure in heat transfer, often caused by refrigerant issues, airflow problems, or failing components.",
+    "urgency": "high",
+    "top_causes": [
+      {
+        "cause": "Low refrigerant charge (leak)",
+        "why_it_happens": "Refrigerant is not consumed; low levels indicate a leak that reduces the system's ability to absorb and move heat.",
+        "severity": "high"
+      },
+      {
+        "cause": "Restricted airflow (dirty filter or blocked coils)",
+        "why_it_happens": "Insufficient airflow prevents proper heat exchange, causing the system to run without effectively cooling.",
+        "severity": "moderate"
+      },
+      {
+        "cause": "Frozen evaporator coil",
+        "why_it_happens": "Low airflow or low refrigerant can cause coil temperatures to drop below freezing, stopping effective cooling.",
+        "severity": "high"
+      },
+      {
+        "cause": "Outdoor condenser failure",
+        "why_it_happens": "If the outdoor unit cannot reject heat, the system cannot complete the cooling cycle.",
+        "severity": "high"
+      },
+      {
+        "cause": "Electrical or control issue",
+        "why_it_happens": "Faulty capacitors, relays, or control boards can allow partial operation without full system function.",
+        "severity": "moderate"
+      }
+    ],
+    "diagnostic_steps": [
+      "Confirm the thermostat is set to cooling mode and the setpoint is below the current indoor temperature.",
+      "Check whether both the indoor unit and outdoor unit are running.",
+      "Feel for airflow at vents and note if it is weak or normal.",
+      "Observe whether the air feels slightly cool, neutral, or warm.",
+      "Inspect the air filter and replace it if it is dirty or clogged.",
+      "Look for ice buildup on refrigerant lines or indoor components.",
+      "Listen for unusual sounds such as buzzing, clicking, or constant running without cycling.",
+      "Check if the outdoor unit fan is spinning and the unit is free of debris."
+    ],
+    "when_to_call": [
+      "The system runs continuously but indoor temperature keeps rising.",
+      "Ice is visible on refrigerant lines or the indoor unit.",
+      "The outdoor unit is not running or is making abnormal noises.",
+      "Airflow is normal but no cooling occurs after basic checks.",
+      "The system frequently trips breakers or fails to start properly."
+    ],
+    "seo": {
+      "meta_title": "AC Not Cooling: Causes, Checks, and When to Call",
+      "meta_description": "Understand why your AC is not cooling, the most common causes, safe checks you can perform, and when it is time to call a professional."
+    }
+  }
+}

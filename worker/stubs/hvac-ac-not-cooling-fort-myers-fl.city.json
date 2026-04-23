@@ -1,0 +1,58 @@
+{
+  "slug": "/hvac/ac-not-cooling/fort-myers-fl",
+  "page_type": "city",
+  "content": {
+    "title": "AC Not Cooling in Fort Myers, FL: What to Check First",
+    "body": "In Fort Myers, an AC that runs but does not cool is often pushed harder than in milder climates: long run times, high humidity, and salt-laden coastal air all stress heat transfer and outdoor equipment. The symptom can look the same from room to room, but the failure class may be airflow, refrigerant, or controls—and each has different risk if the system keeps running.\n\nSouthwest Florida humidity makes weak cooling obvious quickly: the house feels clammy even when the thermostat reads close to setpoint. That pattern frequently tracks to reduced sensible capacity from low airflow, coil icing, or a refrigerant-side problem—not a simple thermostat glitch.\n\nCoastal exposure increases corrosion risk on the outdoor coil and electrical connections. A condenser that cannot reject heat, or a contactor/capacitor that is failing, can leave the indoor fan running while little real cooling happens. Continuing to run the system in that state can escalate compressor wear and indoor comfort loss.\n\nRefrigerant is not consumed; a low charge indicates a leak. Homeowners can safely observe filters, obvious airflow issues, ice, and whether both indoor and outdoor sections are responding to a cooling call—but sealed-system work, refrigerant handling, and energized diagnostics belong with a licensed technician.",
+    "summary": "Fort Myers heat and humidity make AC not cooling urgent: prioritize heat-transfer failures (airflow, refrigerant, condenser/rejection, controls) and stop running the system if icing, weak airflow, or abnormal outdoor noise appears.",
+    "urgency": "high",
+    "top_causes": [
+      {
+        "cause": "Low refrigerant charge (leak)",
+        "why_it_happens": "Under long runtimes, even a modest leak shows up as poor latent and sensible capacity; refrigerant is not consumed—low charge means leakage.",
+        "severity": "high"
+      },
+      {
+        "cause": "Dirty outdoor coil or restricted condenser airflow",
+        "why_it_happens": "Salt, dust, and cottonwood-type debris reduce heat rejection; the system runs longer and can trip on head pressure or simply fail to pull temperature down.",
+        "severity": "high"
+      },
+      {
+        "cause": "Evaporator coil icing from low airflow or refrigerant issues",
+        "why_it_happens": "High indoor wet-bulb plus restricted airflow or low charge drives coil temperature below freezing, blocking effective cooling.",
+        "severity": "high"
+      },
+      {
+        "cause": "Capacitor/contactor or control fault",
+        "why_it_happens": "Heat and corrosion stress outdoor electrical components; partial operation can look like weak cooling rather than a dead unit.",
+        "severity": "moderate"
+      },
+      {
+        "cause": "Duct leakage or severe filter/blower restriction",
+        "why_it_happens": "Not enough conditioned air reaches living spaces even if the coil is cold; runtimes stretch and humidity rises.",
+        "severity": "moderate"
+      }
+    ],
+    "diagnostic_steps": [
+      "Confirm cooling mode and a setpoint below the current indoor temperature.",
+      "Verify indoor and outdoor units both start on a cooling call.",
+      "Feel supply vents for weak vs normal airflow and note any large room-to-room imbalance.",
+      "Replace a visibly loaded filter; recheck airflow before assuming refrigerant fault.",
+      "Look for ice on the indoor coil or suction line; if present, stop forcing cooling and plan professional diagnosis.",
+      "Inspect the outdoor unit for debris blocking the coil; clear only loose debris—do not bend fins aggressively.",
+      "Listen for buzzing/clicking at the outdoor unit that suggests capacitor or contactor trouble.",
+      "If breakers trip once or more when the AC starts, treat that as escalation—not a nuisance reset loop."
+    ],
+    "when_to_call": [
+      "Indoor temperature climbs while the system runs continuously, especially with rising humidity indoors.",
+      "You see ice on lines or coil, or hissing that suggests a rapid refrigerant loss.",
+      "Outdoor fan not spinning, loud grinding, or burning odor from the outdoor unit.",
+      "Normal filter and obvious obstructions are ruled out but supply air stays warm.",
+      "Storm season brownouts returned and the system now behaves differently—intermittent starts or trips."
+    ],
+    "seo": {
+      "meta_title": "AC Not Cooling in Fort Myers, FL | Causes and When to Call",
+      "meta_description": "Fort Myers AC not cooling: common coastal/humidity failure patterns, safe homeowner checks, and clear escalation signs that mean it is time for professional service."
+    }
+  }
+}
