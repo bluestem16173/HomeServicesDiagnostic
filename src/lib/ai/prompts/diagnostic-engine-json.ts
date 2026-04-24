@@ -216,7 +216,7 @@ If the structure is invalid, the answer is incorrect. Return **valid JSON** that
 REQUIREMENTS:
 - Must follow the OUTPUT SCHEMA exactly (no renamed keys).
 - **Extension blocks:** include every object in **AUTHORITY EXTENSIONS** below (six top-level keys) with non-empty, symptom-specific content. Do not invent other top-level keys.
-- Must include structured branching using **If X → Y**, **When Y, then …**, and/or **→** scan lines where the schema allows (decision_tree_text, summary_30s.flow_lines, diagnostic_steps, etc.).
+- Must include structured branching using **If X → Y**, **When Y, then …**, and/or **→** scan lines where the schema allows (diagnostic_flow, summary_30s.flow_lines, diagnostic_steps, etc.).
 - Must include measurable diagnostics (°F, PSI, voltage, superheat/subcool, CFM, etc.) in the fields that carry technical depth.
 - Do not return narrative prose outside the single JSON object.
 - Do not deviate from schema.
@@ -241,7 +241,7 @@ STYLE RULES (CRITICAL)
 - No HTML tags in any string.
 - **Line breaks:** most scalar fields stay **one continuous block** (no internal \\n). **Exceptions:** (1) **summary_30s.flow_lines** — each **array item** is one scan line; use **3–5** items (minimum **3**, prefer **4–5** for HVAC scan density; hard cap **8**). (2) **summary_30s.core_truth**, **what_this_means**, **final_warning**, **cta** may use **one** blank line (\\n\\n) to split **at most two** short paragraphs when density demands it — no deeper nesting, no other fields.
 - **Limit repetition:** the same verbatim sentence must **not** appear more than **twice** anywhere in the JSON. **canonical_truths** holds two iron laws; echo those **ideas** elsewhere with **new wording**, not copy-paste.
-- **Structured blocks first:** put scan ladders in \`quick_table\`, branch logic in \`decision_tree_text\` + \`diagnostic_flow\` (Mermaid), and cost paths in \`repair_matrix\`. Keep \`what_this_means\` to one dense mechanism paragraph — **do not** re-list full branch ladders that already live in those structured fields.
+- **Structured blocks first:** put scan ladders in \`quick_table\`, branch logic in \`diagnostic_flow\`, and cost paths in \`repair_matrix\`. Keep \`what_this_means\` to one dense mechanism paragraph — **do not** re-list full branch ladders that already live in those structured fields.
 
 -----------------------------------
 MATCH THIS STYLE EXACTLY (GENERATION FREEZE — SITE VALIDATOR)
@@ -345,7 +345,7 @@ Use EXACTLY these keys (common model mistakes — do NOT do these):
 - summary_30s (NOT diagnosis_30s, NOT summary, NOT overview)
 - Inside each quick_checks item: result_meaning (NOT "what_it_means", NOT "meaning", NOT "interpretation")
 - Inside each quick_checks item: next_step (REQUIRED — non-empty string every time)
-- diagnostic_flow (REQUIRED — object with nodes and edges; this is what becomes the Mermaid diagram on the site — do NOT put Mermaid syntax in a different field; do NOT omit diagnostic_flow)
+- mermaid_chart (REQUIRED — valid Mermaid syntax starting with 'graph TD')
 - repair_matrix (REQUIRED — array of at least 4 rows)
 
 Do not invent alternate keys. Do not nest the same data under different names.
@@ -374,9 +374,9 @@ SCHEMA & TECHNICAL MINIMUMS (STRICT)
 
 5. Each quick_check MUST include all five strings, especially result_meaning and next_step (non-empty, actionable).
 
-6. diagnostic_flow MUST include:
-   - at least 4 nodes (each id and label non-empty)
-   - at least 3 edges (from, to, label; from/to must match existing node ids)
+6. mermaid_chart MUST include:
+   - valid mermaid syntax starting with 'graph TD'
+   - at least 4 nodes and 3 edges
 
 7. repair_matrix MUST include at least 4 rows with numeric cost_min and cost_max.
 
@@ -458,7 +458,7 @@ All keys below are **required** for the live validator. Do not omit optional-loo
     }
   ],
 
-  "decision_tree_text": [
+  "diagnostic_flow": [
     "Is airflow strong at registers? → No → filter, blower, coil face, or ducts",
     "Is the thermostat calling for cooling? → No → mode, setpoint, wiring, or control fault",
     "Does cooling return after basics? → No → licensed refrigerant and compressor diagnosis"
@@ -470,19 +470,7 @@ All keys below are **required** for the live validator. Do not omit optional-loo
     "pressure gauges"
   ],
 
-  "diagnostic_flow": {
-    "nodes": [
-      { "id": "A", "label": "" },
-      { "id": "B", "label": "" },
-      { "id": "C", "label": "" },
-      { "id": "D", "label": "" }
-    ],
-    "edges": [
-      { "from": "A", "to": "B", "label": "" },
-      { "from": "B", "to": "C", "label": "" },
-      { "from": "B", "to": "D", "label": "" }
-    ]
-  },
+  "mermaid_chart": "graph TD\\n  A[Start] --> B[Check Flow]\\n  B --> C[Result]",
 
   "repair_matrix_intro": "",
 
@@ -515,7 +503,7 @@ All keys below are **required** for the live validator. Do not omit optional-loo
   "cta": ""
 }
 
-Use symptom-specific node ids and labels (replace A–D with short unique ids like n1, n2, br, rf — keep at least 4 nodes and 3 edges, and every edge endpoint must exist on a node).
+Use symptom-specific nodes and labels for the mermaid_chart. Keep at least 4 nodes and 3 edges.
 
 -----------------------------------
 AUTHORITY EXTENSIONS (TOP-LEVEL — INCLUDE ALL SIX ON EVERY NEW PAGE)
@@ -591,7 +579,7 @@ Also: top_causes **3–4** entries with label + probability each (mechanism + li
   3) Test refrigerant levels → compare cooling to demand → gauge pressures → low charge means **leak repair**, not "top-off" — sealed-system work commonly starts **$500–$1,500** before major damage.
 - Weave **canonical_truths** ideas into risk lines with **fresh wording** (no verbatim repeats).
 
-### decision_tree_text (REQUIRED — at least 3 strings)
+### diagnostic_flow (REQUIRED — at least 3 strings)
 - Plain-text branches only (no Mermaid). Each string: question → branch → outcome, using ASCII -> or Unicode → as separators.
 - **HVAC cooling-loss reference shape** (adapt): airflow at registers? → thermostat calling for cooling? → cooling returns after basics? — outcomes must stay **physical** (filter/blower/ducts; mode/setpoint/wiring; licensed refrigerant/compressor diagnosis).
 
@@ -604,8 +592,8 @@ Also: top_causes **3–4** entries with label + probability each (mechanism + li
 - This is the **hero scan table** placed **immediately under** the 30-second block on the site (Symptom | Likely Cause | Fix).
 - HVAC cooling **gold scan** (adapt wording to city/symptom — keep the same ladder): "Weak airflow" / "Dirty filter" / "Replace filter"; "Ice on lines" / "Frozen evaporator" / "Thaw + restore airflow"; "Fan runs, no cooling" / "Refrigerant leak" / "Leak repair + recharge"; "No cooling at all" / "Compressor issue" / "Professional diagnosis".
 
-### diagnostic_flow (MERMAID-ready)
-- Real branching for this symptom. Examples of logic families (adapt labels to symptom):
+### mermaid_chart (MERMAID-ready)
+- Valid Mermaid syntax (starting with \`graph TD\`). Real branching for this symptom. Examples of logic families (adapt labels to symptom):
   - AC NOT TURNING ON: power → thermostat → capacitor/contactor
   - WEAK AIRFLOW: filter → duct → blower
   - AC MAKING NOISE: noise type → fan → compressor

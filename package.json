@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "lucide-react": "^1.8.0",
+    "mermaid": "^11.14.0",
     "next": "16.2.4",
     "pg": "^8.20.0",
     "react": "19.2.4",
@@ -21,6 +22,7 @@
     "@flydotio/dockerfile": "^0.7.10",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

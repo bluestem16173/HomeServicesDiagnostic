@@ -1,4 +1,4 @@
-const pool = require("./db");
+const pool = require("../app/api/db");
 const { validatePage, normalizeSlug } = require("./schema");
 const { generatePage } = require("./generate");
 
