@@ -31,6 +31,7 @@ function validatePage(raw) {
   const candidate = {
     slug,
     page_type: raw.page_type,
+    seo: raw.seo,
     content: raw.content,
   };
 
@@ -44,7 +45,8 @@ function validatePage(raw) {
     slug,
     page_type: page_type_expected,
     content_json: {
-      ...pr.data.content,
+      seo: pr.data.seo,
+      content: pr.data.content,
       generated_at: new Date().toISOString(),
     },
     status: "done",

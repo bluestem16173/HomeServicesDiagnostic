@@ -44,6 +44,7 @@ RULES
 - Do not mention being an AI.
 - Do not include HTML.
 - Keep outputs compact and useful.
+- Do NOT use the word "Diagnostics" or "Diagnostic" in the title or seo.title. Use phrasing like "Breaker Keeps Tripping? Let's Find the Cause" or similar if appropriate.
 
 ESCALATION RULE:
 If untreated, describe how the issue can worsen (cost, system damage, or safety).

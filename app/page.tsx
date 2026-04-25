@@ -2,7 +2,46 @@ import Image from "next/image";
 import Link from "next/link";
 import { Snowflake, Droplet, Zap, LayoutGrid, Stethoscope, Home, ArrowRight, ShieldCheck, Clock, CheckCircle, Sparkles, Upload } from "lucide-react";
 
-export default function HomePage() {
+async function getWeather(cityQuery: string): Promise<{ temp: number, code: number, humidity: number, feelsLike: number } | null> {
+  try {
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(cityQuery)}&count=1&language=en&format=json`, { next: { revalidate: 3600 } });
+    if (!geoRes.ok) return null;
+    const geoData = await geoRes.json();
+    if (geoData.results && geoData.results.length > 0) {
+      const { latitude, longitude } = geoData.results[0];
+      const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code&temperature_unit=fahrenheit`, { next: { revalidate: 3600 } });
+      if (!weatherRes.ok) return null;
+      const weatherData = await weatherRes.json();
+      const current = weatherData.current;
+      return { 
+        temp: Math.round(current.temperature_2m),
+        code: current.weather_code,
+        humidity: Math.round(current.relative_humidity_2m),
+        feelsLike: Math.round(current.apparent_temperature)
+      };
+    }
+  } catch (e) {
+    console.error("Weather fetch failed:", e);
+  }
+  return null;
+}
+
+export default async function HomePage() {
+  const weather = await getWeather('fort myers');
+  const temp = weather?.feelsLike ?? weather?.temp;
+  const isStormy = weather ? (weather.code >= 50 && weather.code <= 99) : false;
+
+  let weatherAlert = null;
+  if (temp && temp > 90) {
+    weatherAlert = { text: "Peak Heat Stress", color: "text-red-500", desc: "HVAC systems at high risk", link: "/hvac/ac-not-cooling/fort-myers-fl" };
+  } else if (temp && temp > 85) {
+    weatherAlert = { text: "High Heat Load", color: "text-red-400", desc: "AC struggling to cool?", link: "/hvac/ac-not-cooling/fort-myers-fl" };
+  } else if (isStormy) {
+    weatherAlert = { text: "Storm Activity", color: "text-yellow-400", desc: "Electrical surges likely", link: "/electrical/breaker-tripping/cape-coral-fl" };
+  } else if (temp) {
+    weatherAlert = { text: "Stable Conditions", color: "text-blue-400", desc: "View Top HVAC Issues", link: "/hvac/ac-not-cooling/fort-myers-fl" };
+  }
+
   return (
     <main className="min-h-screen bg-[#060913] text-white font-sans selection:bg-yellow-400 selection:text-black pb-24">
 
@@ -72,7 +111,25 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#060913]/60 via-[#060913]/40 to-[#060913]"></div>
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
+        <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center">
+          
+          {/* WEATHER WIDGET */}
+          {weatherAlert && (
+            <Link href={weatherAlert.link} className="mb-6 bg-black/40 border border-white/10 hover:border-white/30 hover:bg-black/60 transition-all backdrop-blur-md rounded-full px-5 py-2 flex items-center gap-3 group/weather">
+              <span className="relative flex h-2 w-2">
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${weatherAlert.color.replace('text-', 'bg-')}`}></span>
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${weatherAlert.color.replace('text-', 'bg-')}`}></span>
+              </span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-300">Live in Fort Myers:</span>
+              <span className="text-sm font-bold text-white">{temp}°F</span>
+              <span className="text-[10px] text-blue-300 ml-1 font-bold tracking-widest uppercase">Humidity: {weather.humidity}%</span>
+              <span className="text-gray-400 text-xs px-2 border-l border-white/20 ml-1">
+                <span className={`${weatherAlert.color} font-medium`}>{weatherAlert.text}</span> <span className="hidden sm:inline">— {weatherAlert.desc}</span>
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 text-gray-400 ml-1 group-hover/weather:translate-x-1 transition-transform" />
+            </Link>
+          )}
+
           <h1 className="text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-tight">
             Diagnose problems<br />
             <span className="text-[#facc15]">before they cost you thousands.</span>

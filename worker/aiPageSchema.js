@@ -1,31 +1,30 @@
 const { z } = require("zod");
 
+const seoSchema = z.object({
+  title: z.string(),
+  description: z.string().optional()
+});
+
 const contentSchema = z.object({
-  title: z.string().min(1),
-  body: z.string().min(1),
-  summary: z.string().min(1),
-  urgency: z.enum(["low", "moderate", "high"]),
-  top_causes: z
-    .array(
-      z.object({
-        cause: z.string().min(1),
-        why_it_happens: z.string().min(1),
-        severity: z.string().min(1),
-      })
-    )
-    .min(3)
-    .max(6),
-  diagnostic_steps: z.array(z.string().min(1)).min(4).max(8),
-  when_to_call: z.array(z.string().min(1)).min(3).max(6),
-  seo: z.object({
-    meta_title: z.string().min(1),
-    meta_description: z.string().min(1),
-  }),
+  field_triage: z.string(),
+  top_causes: z.array(z.object({
+    title: z.string(),
+    description: z.string()
+  })),
+  diagnostic_flow: z.array(z.string()),
+  quick_checks: z.array(z.string()),
+  stop_diy: z.string(),
+  repair_vs_replace: z.string(),
+  cta: z.string(),
+  mermaid_chart: z.string().optional(),
+  climate_blurb: z.string(),
+  climate_keyword: z.string()
 });
 
 const aiPageSchema = z.object({
   slug: z.string().min(1),
   page_type: z.enum(["city", "cluster"]),
+  seo: seoSchema,
   content: contentSchema,
 });
 

@@ -1,4 +1,6 @@
-const pool = require("../app/api/db");
+const { Pool } = require('pg');
+try { process.loadEnvFile('.env.local'); } catch (e) {}
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const { validatePage, normalizeSlug } = require("./schema");
 const { generatePage } = require("./generate");
 
@@ -60,7 +62,7 @@ async function processJob(job) {
     validated.slug,
     validated.page_type,
     validated.content_json,
-    validated.status
+    'draft'
   ]);
 
   await pool.query(
