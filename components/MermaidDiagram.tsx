@@ -16,10 +16,10 @@ export default function MermaidDiagram({ chart, keyword }: { chart: string, keyw
                     startOnLoad: false,
                     securityLevel: 'loose',
                     flowchart: {
-                        useMaxWidth: true,
+                        useMaxWidth: false,
                         htmlLabels: true,
-                        nodeSpacing: 100,
-                        rankSpacing: 120
+                        nodeSpacing: 180,
+                        rankSpacing: 180
                     },
                     themeVariables: {
                         fontSize: '16px',
@@ -38,6 +38,15 @@ export default function MermaidDiagram({ chart, keyword }: { chart: string, keyw
                 
                 if (ref.current) {
                     ref.current.innerHTML = svg;
+
+                    // DESTROY MERMAID CONSTRAINTS SO CSS CAN TAKE OVER
+                    const svgElement = ref.current.querySelector("svg");
+                    if (svgElement) {
+                        svgElement.removeAttribute("height");
+                        svgElement.removeAttribute("width");
+                        svgElement.removeAttribute("style");
+                        svgElement.setAttribute("preserveAspectRatio", "xMidYMid meet");
+                    }
 
                     // Dynamically highlight the keyword in red wherever it appears in the SVG (nodes and arrows)
                     if (keyword) {
@@ -80,8 +89,8 @@ export default function MermaidDiagram({ chart, keyword }: { chart: string, keyw
     }, [chart, keyword]);
 
     return (
-        <div className="mermaid overflow-x-auto w-full flex justify-center items-center p-4">
-            <div ref={ref} className="[&>svg]:min-w-[600px] [&>svg]:max-w-none" />
+        <div className="mermaid">
+            <div ref={ref} />
         </div>
     );
 }

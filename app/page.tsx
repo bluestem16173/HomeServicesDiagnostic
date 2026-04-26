@@ -122,7 +122,7 @@ export default async function HomePage() {
               </span>
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-300">Live in Fort Myers:</span>
               <span className="text-sm font-bold text-white">{temp}°F</span>
-              <span className="text-[10px] text-blue-300 ml-1 font-bold tracking-widest uppercase">Humidity: {weather.humidity}%</span>
+              <span className="text-[10px] text-blue-300 ml-1 font-bold tracking-widest uppercase">Humidity: {weather?.humidity}%</span>
               <span className="text-gray-400 text-xs px-2 border-l border-white/20 ml-1">
                 <span className={`${weatherAlert.color} font-medium`}>{weatherAlert.text}</span> <span className="hidden sm:inline">— {weatherAlert.desc}</span>
               </span>

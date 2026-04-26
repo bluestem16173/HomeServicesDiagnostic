@@ -27,16 +27,17 @@ body {
 
 .mermaid {
   width: 100%;
-  min-height: 550px;
+  height: 550px;
   background: #f9fafb;
   border-radius: 8px;
   padding: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: block;
+  overflow: auto;
 }
 
 .mermaid svg {
-  width: 100% !important;
-  height: auto;
+  min-width: 1800px !important; /* Force extreme width to scale up the height proportionally */
+  height: auto !important;
+  max-width: none !important;
+  margin: 0 auto;
 }

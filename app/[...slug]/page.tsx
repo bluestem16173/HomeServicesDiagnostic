@@ -167,7 +167,7 @@ export default async function DiagnosticPage(props: PageProps) {
         {/* 1. HERO SECTION */}
         <HeroSection 
           title={`${(params.slug[1] || "issue").split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\bAc\b/g, 'AC').replace(/\bHvac\b/g, 'HVAC')}? Let's find the cause.`} 
-          description={content.hero?.subhead || pageData.seo?.description} 
+          description={content.hero?.subhead || (pageData as any).seo?.description} 
           vertical={vertical} 
         />
 
@@ -179,7 +179,10 @@ export default async function DiagnosticPage(props: PageProps) {
           {/* 3 & 4. DIAGNOSTIC FLOW + CONCLUSION */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
             <div className="lg:col-span-8 flex flex-col">
-              <h2 className="text-[11px] font-bold tracking-widest text-blue-900 uppercase mb-4 border-b pb-2">3. Diagnostic Flow (Visual Flowchart)</h2>
+              <div className="flex justify-between items-end mb-4 border-b pb-2">
+                <h2 className="text-[11px] font-bold tracking-widest text-blue-900 uppercase m-0">3. Diagnostic Flow (Visual Flowchart)</h2>
+                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">*Interactive Chart</span>
+              </div>
               <div className="bg-slate-50 border border-blue-100 rounded-lg p-4 flex-grow flex flex-col items-center justify-center overflow-hidden shadow-inner">
                 {mermaidString && (
                   <DynamicMermaid chart={mermaidString} keyword={""} />
