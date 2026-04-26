@@ -40,9 +40,13 @@ const pagesToGenerate = [
 ];
 
 async function run() {
-  console.log(`Starting bulk generation of ${pagesToGenerate.length} SEO pages...`);
+  const limitArgIndex = process.argv.indexOf('--limit');
+  const limit = limitArgIndex > -1 ? parseInt(process.argv[limitArgIndex + 1], 10) : pagesToGenerate.length;
+  const pagesToProcess = pagesToGenerate.slice(0, limit);
+
+  console.log(`Starting bulk generation of ${pagesToProcess.length} SEO pages...`);
   
-  for (const page of pagesToGenerate) {
+  for (const page of pagesToProcess) {
     try {
       console.log(`\nProcessing: ${page.slug}`);
       const result = await generateHsdPage({

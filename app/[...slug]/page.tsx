@@ -116,7 +116,7 @@ function buildMermaid(flow: any, temp?: number | null, vertical?: string, citySl
   // Inject styles for highlighted nodes
   if (nodesToHighlight.length > 0) {
     chart += `\n  %% Dynamic Weather Highlighting\n`;
-    chart += `  classDef weatherHighlight fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#991b1b,stroke-dasharray: 5 5;\n`;
+    chart += `  classDef weatherHighlight fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#991b1b;\n`;
     nodesToHighlight.forEach(id => {
       chart += `  class ${id} weatherHighlight;\n`;
     });
@@ -166,7 +166,7 @@ export default async function DiagnosticPage(props: PageProps) {
         
         {/* 1. HERO SECTION */}
         <HeroSection 
-          title={`${(params.slug[1] || "issue").split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\bAc\b/g, 'AC').replace(/\bHvac\b/g, 'HVAC')}? Let's find the cause.`} 
+          title={`${(params.slug[1] || "issue").split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\bAc\b/g, 'AC').replace(/\bHvac\b/g, 'HVAC')}`} 
           description={content.hero?.subhead || (pageData as any).seo?.description} 
           vertical={vertical} 
         />
@@ -340,7 +340,7 @@ export function QuickTriageBlock({ content, vertical, weather }: { content: stri
 
 
 
-export function CauseCards({ causes }: { causes: { cause: string; mechanism: string; signal: string; severity: string }[] }) {
+export function CauseCards({ causes }: { causes: { cause: string; mechanism: string | string[]; signal: string | string[]; escalation?: string | string[]; severity: string }[] }) {
   if (!causes || causes.length === 0) return null;
 
   const icons = [<FileText key="1" className="w-6 h-6"/>, <Zap key="2" className="w-6 h-6"/>, <Wrench key="3" className="w-6 h-6"/>, <Droplet key="4" className="w-6 h-6"/>, <Snowflake key="5" className="w-6 h-6"/>];
@@ -355,14 +355,24 @@ export function CauseCards({ causes }: { causes: { cause: string; mechanism: str
               {icons[i % icons.length]}
               <h3 className="font-extrabold text-sm uppercase tracking-wide">{c.cause}</h3>
             </div>
-            <p className="text-[13px] text-slate-600 leading-relaxed font-medium mb-2">
-              <span className="font-bold text-slate-800">Mechanism: </span>
-              {c.mechanism}
-            </p>
-            <p className="text-[12px] text-slate-500 font-medium mb-2">
-              <span className="font-bold text-slate-700">Signal: </span>
-              {c.signal}
-            </p>
+            <div className="mb-3">
+              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Mechanism:</span>
+              <ul className="list-disc pl-4 text-[12px] text-slate-600 space-y-1 mt-1 font-medium">
+                {(Array.isArray(c.mechanism) ? c.mechanism : [c.mechanism]).map((m, idx) => m ? <li key={idx}>{m}</li> : null)}
+              </ul>
+            </div>
+            <div className="mb-3">
+              <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wide">Signal:</span>
+              <ul className="list-disc pl-4 text-[12px] text-slate-600 space-y-1 mt-1 font-medium">
+                {(Array.isArray(c.signal) ? c.signal : [c.signal]).map((s, idx) => s ? <li key={idx}>{s}</li> : null)}
+              </ul>
+            </div>
+            <div className="mb-3">
+              <span className="text-[11px] font-bold text-red-800 uppercase tracking-wide">Escalation:</span>
+              <ul className="list-disc pl-4 text-[12px] text-red-600 space-y-1 mt-1 font-medium">
+                {(Array.isArray(c.escalation) ? c.escalation : (c.escalation ? [c.escalation] : [])).map((e: any, idx: number) => <li key={idx}>{e}</li>)}
+              </ul>
+            </div>
             <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded ${c.severity === 'high' ? 'bg-red-100 text-red-700' : c.severity === 'moderate' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
               Severity: {c.severity}
             </span>
@@ -373,15 +383,17 @@ export function CauseCards({ causes }: { causes: { cause: string; mechanism: str
   );
 }
 
-export function StopDIYAlert({ content }: { content: string[] }) {
-  if (!content || !content.length) return null;
+export function StopDIYAlert({ content }: { content: string[] | Record<string, string> }) {
+  if (!content) return null;
+  const items = Array.isArray(content) ? content : (typeof content === 'object' ? Object.values(content) : []);
+  if (items.length === 0) return null;
   return (
     <section className="bg-[#fef2f2] border border-red-200 p-5 rounded h-full">
       <h2 className="text-[11px] font-bold text-red-700 tracking-wider mb-4 uppercase flex items-center gap-2">
         <ShieldAlert className="w-4 h-4" /> 6. When to Stop DIY
       </h2>
       <ul className="list-disc pl-5 text-red-900 text-sm font-medium leading-relaxed space-y-1 mb-4">
-        {content.map((item, i) => <li key={i}>{item}</li>)}
+        {items.map((item, i) => <li key={i}>{item as React.ReactNode}</li>)}
       </ul>
       <p className="text-[11px] font-extrabold text-red-800 uppercase tracking-widest border-t border-red-200 pt-4 flex items-center gap-2 mt-auto">
         <AlertTriangle className="w-4 h-4 shrink-0" /> This is where DIY stops. The risk is not just damage—it’s safety and system failure.
@@ -390,14 +402,16 @@ export function StopDIYAlert({ content }: { content: string[] }) {
   );
 }
 
-export function RepairVsReplace({ content }: { content: string[] }) {
-  if (!content || !content.length) return null;
+export function RepairVsReplace({ content }: { content: string[] | Record<string, string> }) {
+  if (!content) return null;
+  const items = Array.isArray(content) ? content : (typeof content === 'object' ? Object.values(content) : []);
+  if (items.length === 0) return null;
   return (
     <section className="bg-[#f1f5f9] border border-gray-200 p-5 rounded h-full">
       <h2 className="text-[11px] font-bold text-[#1e3a8a] tracking-wider mb-4 uppercase">7. Repair vs. Replace</h2>
       <ul className="list-disc pl-5 text-slate-800 text-[13px] font-medium leading-relaxed space-y-1.5">
-        {content.map((item, i) => (
-          <li key={i}>{item}</li>
+        {items.map((item, i) => (
+          <li key={i}>{item as React.ReactNode}</li>
         ))}
       </ul>
     </section>
@@ -418,22 +432,25 @@ export function DiagnosticConclusionCard({ content, symptom, vertical, weather }
     primaryCause = {
       ...primaryCause,
       cause: "Airflow or Refrigerant Stress Failure",
-      signal: `At ${temp}°F, the system is under peak heat load and cannot keep up with the thermostat setpoint.`,
-      mechanism: "High ambient temperatures severely reduce the condenser's ability to reject heat, causing internal pressure to spike and amplifying minor airflow or charge deficits into total system failure."
+      signal: [`At ${temp}°F, the system is under peak heat load and cannot keep up with the thermostat setpoint.`],
+      mechanism: ["High ambient temperatures severely reduce the condenser's ability to reject heat, causing internal pressure to spike and amplifying minor airflow or charge deficits into total system failure."],
+      escalation: primaryCause.escalation || []
     };
   } else if (primaryCause && vertical === 'electrical' && isStormy) {
     primaryCause = {
       ...primaryCause,
       cause: "Storm-Related Electrical Fault",
-      signal: "Active storm activity is likely causing surges or moisture intrusion.",
-      mechanism: "Moisture infiltrating exterior boxes or power grid fluctuations are tripping sensitive AFCI/GFCI breakers or stressing main panel components."
+      signal: ["Active storm activity is likely causing surges or moisture intrusion."],
+      mechanism: ["Moisture infiltrating exterior boxes or power grid fluctuations are tripping sensitive AFCI/GFCI breakers or stressing main panel components."],
+      escalation: primaryCause.escalation || []
     };
   } else if (primaryCause && vertical === 'plumbing' && temp !== undefined && temp < 32) {
     primaryCause = {
       ...primaryCause,
       cause: "Freeze-Related Pressure Failure",
-      signal: "Temperatures have dropped to freezing, exposing uninsulated or poorly insulated lines.",
-      mechanism: "Water expanding as it freezes within the lines is blocking flow and creating immense hydrostatic pressure capable of bursting pipes."
+      signal: ["Temperatures have dropped to freezing, exposing uninsulated or poorly insulated lines."],
+      mechanism: ["Water expanding as it freezes within the lines is blocking flow and creating immense hydrostatic pressure capable of bursting pipes."],
+      escalation: primaryCause.escalation || []
     };
   }
 
@@ -453,15 +470,17 @@ export function DiagnosticConclusionCard({ content, symptom, vertical, weather }
             
             <div className="space-y-4 text-xs text-slate-700 font-medium">
               <div>
-                <p className="font-bold text-slate-900 mb-1">What this means right now:</p>
-                <p className="pl-3 border-l-2 border-red-200 text-slate-600">
-                  Your system is running but losing cooling capacity under heat load. <strong className="text-red-700 font-extrabold">This is not a normal performance issue</strong>—it indicates a breakdown in heat transfer. {primaryCause.signal}
-                </p>
+                <p className="font-bold text-slate-900 mb-1">What you might be noticing:</p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-600">
+                  {(Array.isArray(primaryCause.signal) ? primaryCause.signal : [primaryCause.signal]).map((s: string, idx: number) => s ? <li key={idx}>{s}</li> : null)}
+                </ul>
               </div>
               
               <div>
                 <p className="font-bold text-slate-900 mb-1">Why this is happening:</p>
-                <p className="pl-3 border-l-2 border-red-200 text-slate-600">{primaryCause.mechanism}</p>
+                <ul className="list-disc pl-5 space-y-1 text-slate-600">
+                  {(Array.isArray(primaryCause.mechanism) ? primaryCause.mechanism : [primaryCause.mechanism]).map((m: string, idx: number) => m ? <li key={idx}>{m}</li> : null)}
+                </ul>
               </div>
             </div>
           </div>
@@ -470,21 +489,17 @@ export function DiagnosticConclusionCard({ content, symptom, vertical, weather }
         <div className="bg-[#fff1f2] p-3 rounded border border-red-100 mb-5">
           <p className="text-[11px] font-bold text-red-800 uppercase tracking-wide mb-2">What happens next if ignored:</p>
           <ul className="list-disc pl-5 space-y-1 text-xs text-red-700 font-semibold italic mb-3">
-            <li>System runs longer and harder</li>
-            <li>Compressor stress increases rapidly</li>
-            <li>Cooling performance continues to decline</li>
-            <li>Failure risk increases significantly within weeks</li>
+            {primaryCause?.escalation ? (Array.isArray(primaryCause.escalation) ? primaryCause.escalation : [primaryCause.escalation]).map((e: string, idx: number) => <li key={idx}>{e}</li>) : <li>Failure risk increases significantly within weeks</li>}
           </ul>
           <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider flex items-center gap-1.5 border-t border-red-200 pt-2">
             <AlertTriangle className="w-3.5 h-3.5" /> This issue is actively developing and will worsen under continued operation.
           </p>
         </div>
 
-        {/* TRIGGER BLOCK */}
         <div className="mb-5">
           <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2 border-b pb-1">If you're noticing:</p>
           <ul className="space-y-1.5 text-xs text-slate-600 font-medium">
-            {content.quick_triage?.slice(0, 3).map((t: string, i: number) => (
+            {(Array.isArray(content.quick_triage) ? content.quick_triage : (typeof content.quick_triage === 'object' ? Object.values(content.quick_triage) : [])).slice(0, 3).map((t: any, i: number) => (
               <li key={i} className="flex items-start gap-1.5">
                 <Check className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
                 <span>{t}</span>

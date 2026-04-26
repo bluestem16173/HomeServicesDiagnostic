@@ -19,8 +19,9 @@ export const HsdSchema = z.object({
     }).passthrough(),
     top_causes: z.array(z.object({
       cause: z.string(),
-      mechanism: z.string(),
-      signal: z.string(),
+      mechanism: z.array(z.string()),
+      signal: z.array(z.string()),
+      escalation: z.array(z.string()),
       severity: z.enum(["low", "moderate", "high"])
     })),
     stop_diy: z.array(z.string()),
@@ -44,7 +45,40 @@ SYSTEM VERSION: ${PROMPT_VERSION}
 
 This prompt is LOCKED.
 Do not modify structure without version increment.
-You are a senior HVAC diagnostic engine generating structured, visual-first service pages for a high-performance home services platform.
+You are a senior {{TRADE}} diagnostic engine generating structured, visual-first service pages for a high-performance home services platform.
+
+TRADE CONTEXT (HARD LOCK):
+
+Trade: {{TRADE}}
+
+You MUST ONLY generate content relevant to this trade.
+
+---
+
+If Trade = HVAC:
+- Use airflow, refrigerant, compressor, coils, thermostat
+
+If Trade = Plumbing:
+- Use pressure, flow, drainage, fixtures, valves, leaks, supply lines
+
+If Trade = Electrical:
+- Use voltage, circuits, breakers, wiring, load, panels, GFI
+
+---
+
+STRICT RULE:
+
+DO NOT mix trades.
+
+Reject any output that includes systems outside the current trade.
+
+Examples:
+
+- Plumbing page MUST NOT mention refrigerant or airflow
+- Electrical page MUST NOT mention coils or compressors
+- HVAC page MUST NOT mention pipes or water leaks as primary failures
+
+---
 
 This system does NOT produce blog content.
 
@@ -131,7 +165,8 @@ Rules:
 
 DIAGNOSTIC_FLOW (CRITICAL):
 
-Must be a horizontal Mermaid graph.
+You MUST build a realistic, visual diagnostic flowchart.
+IMPORTANT VISUAL RULE: You MUST explicitly include the exact symptom (e.g. "{{SYMPTOM}}") in the label of the very first node. Our UI searches for this exact string and highlights it in red. If you do not include it word-for-word, the visual highlight will fail!
 
 Format:
 
@@ -145,8 +180,8 @@ Format:
 Rules:
 - MUST be symptom-specific
 - MUST branch by failure class:
-  - airflow
-  - refrigerant
+  - primary flow/transfer (airflow, pressure)
+  - component integrity (refrigerant, leaks)
   - electrical
   - controls
 - MUST NOT be generic
@@ -212,6 +247,31 @@ Include at least one branch in diagnostic_flow for:
 
 ---
 
+HVAC DIAGNOSTIC FLOW RULES:
+
+If Trade = HVAC:
+
+Branches MUST form a true decision tree (not a straight line) and MUST include:
+- Airflow check (Yes/No)
+- Compressor / Outdoor unit check (Yes/No)
+- Peak heat stress check (Yes/No)
+
+Example HVAC structure:
+
+{{SYMPTOM}} Start
+→ Next → Thermostat / Power issue
+→ Next → Airflow Strong?
+
+Airflow Strong?
+→ No → Filter / Blower issue
+→ Yes → Cools During Peak Heat?
+
+Cools During Peak Heat?
+→ No → Refrigerant / Compressor Stress
+→ Yes → Thermostat / Sensor issue
+
+---
+
 ELECTRICAL WEATHER REQUIREMENTS:
 
 For storm-prone regions:
@@ -230,32 +290,209 @@ This is REQUIRED for Florida pages.
 
 ---
 
-TOP_CAUSES:
+PLUMBING DIAGNOSTIC FLOW RULES:
 
-3–5 structured causes:
+If Trade = Plumbing:
 
-Each must include:
+Flow must include:
+
+- water flow check
+- pressure check
+- leak detection
+- drainage behavior
+- fixture vs system-level failure
+
+Branches MUST form a true decision tree (not a straight line) and MUST include:
+
+- pressure issue
+- blockage / clog
+- leak or pipe failure
+- fixture malfunction
+
+---
+
+Example Plumbing structure:
+
+{{SYMPTOM}} Start
+→ Next → supply issue
+→ Next → pressure check
+
+Pressure Normal?
+→ No → pressure regulator / supply issue
+→ Yes → drainage check
+
+Drainage Slow?
+→ Yes → clog / blockage
+→ No → fixture failure
+
+---
+
+ELECTRICAL DIAGNOSTIC FLOW RULES:
+
+If Trade = Electrical:
+
+Flow must include:
+
+- power presence check
+- breaker/panel behavior
+- circuit load evaluation
+- outlet/device response
+
+Branches MUST form a true decision tree (not a straight line) and MUST include:
+
+- breaker trip / overload
+- wiring fault
+- GFI / safety trip
+- component failure
+
+---
+
+Example Electrical structure:
+
+{{SYMPTOM}} Start
+→ Next → supply / panel issue
+→ Next → breaker check
+
+Breaker Tripping?
+→ Yes → overload or short
+→ No → outlet/device check
+
+Outlet Working?
+→ No → wiring fault
+→ Yes → intermittent control issue
+
+---
+
+TOP_CAUSES – EXACT COUNT REQUIREMENT (HARD LOCK):
+
+You MUST output EXACTLY 4 top causes.
+
+NOT 3  
+NOT 5  
+NOT a range  
+
+Exactly 4.
+
+Each cause MUST contain MULTI-LINE structured detail (as an array of strings).
 
 {
   "cause": "...",
-  "mechanism": "...",
-  "signal": "...",
+  "mechanism": ["...", "..."],
+  "signal": ["...", "..."],
+  "escalation": ["...", "..."],
   "severity": "low | moderate | high"
 }
 
+MECHANISM REQUIREMENTS (Load + Progression):
+Must explain:
+- what physically fails
+- why it happens during usage patterns
+- what conditions make it worse
+
+SIGNAL REQUIREMENTS (Situational Context):
+Must describe:
+- what the homeowner actually notices
+- when, under what condition, and what changed
+- how it progresses
+
+SIGNAL ENRICHMENT RULE:
+
+Each signal must include:
+- WHEN the issue occurs (under load, after storms, during use)
+- WHAT triggers it (appliance use, weather, time of day)
+
+Reject signals that are generic descriptions only.
+
+ESCALATION REQUIREMENTS (Timeline + Consequence Clarity):
+Must explain:
+- what happens if ignored
+- how it gets there
+- how cost or damage increases and how quickly it worsens
+
+FORMAT RULE:
+Each field (mechanism, signal, escalation) must contain multiple short lines (array of strings), not one sentence.
+
 Rules:
-- must map to real HVAC failure classes
 - must reflect symptom (not generic system failure)
-- MUST include refrigerant truth:
-  "refrigerant is not consumed; low charge indicates a leak"
+- MUST include trade-specific physical truths (e.g., refrigerant is not consumed; low charge indicates a leak)
 
-CAUSE SIGNAL REQUIREMENTS:
-Each top cause MUST include signals that vary under environmental stress.
+CAUSE COVERAGE RULE:
 
-Examples:
-- airflow restriction: "Becomes more noticeable during hotter parts of the day"
-- refrigerant issue: "Cooling may work in mild conditions but fail under heat load"
-- electrical fault: "System may fail intermittently after storms or high humidity exposure"
+The 4 causes MUST cover distinct failure classes.
+
+For HVAC:
+1. Airflow Restriction
+2. Refrigerant Issue
+3. Electrical / Control Failure
+4. Load / System Stress (heat, runtime, environment)
+
+For Plumbing:
+1. Leak / Pipe Failure
+2. Clog / Blockage
+3. Pressure Imbalance
+4. Fixture / Valve Failure
+
+For Electrical:
+1. Breaker / Overload
+2. Wiring Fault
+3. Component Failure
+4. Environmental / Surge Issue
+
+---
+
+DISTINCTNESS RULE:
+
+Each cause must represent a DIFFERENT failure category.
+
+Reject outputs where:
+- causes overlap
+- causes describe the same issue differently
+
+Example of invalid:
+- "Low Refrigerant"
+- "Refrigerant Leak"
+- "Refrigerant Problem"
+
+Example of valid:
+- Airflow Restriction
+- Refrigerant Issue
+- Electrical Failure
+- Heat Load Stress
+
+---
+
+REJECTION RULE:
+
+If output contains:
+- fewer than 4 causes → FAIL
+- more than 4 causes → FAIL
+
+Regenerate until exactly 4 are present.
+
+---
+
+Reject causes that do not belong to the active trade.
+
+TRADE-SPECIFIC DETAIL REQUIREMENT:
+
+PLUMBING causes MUST include:
+- pressure behavior (drops, fluctuations)
+- flow behavior (slow, blocked, inconsistent)
+- leak progression or blockage buildup
+
+HVAC causes MUST include:
+- system performance under heat load
+- airflow or heat transfer impact
+- runtime behavior
+
+ELECTRICAL causes MUST include:
+- circuit behavior under load
+- breaker or voltage response
+- intermittent vs full failure patterns
+
+---
+
+Reject causes that do not include system behavior under real-world conditions.
 
 ---
 
@@ -263,11 +500,26 @@ STOP_D_IY:
 
 Array of hard-stop warnings:
 
-Examples:
-- exposed wiring
-- capacitor/compressor access
+STOP_D_IY MUST BE TRADE-SPECIFIC:
+
+HVAC:
 - refrigerant handling
-- internal sealed system work
+- compressor access
+- electrical shock risk
+
+Plumbing:
+- pressure release risk
+- hidden leak damage
+- structural water damage
+
+Electrical:
+- electrocution risk
+- arc flash
+- fire hazard
+
+---
+
+Reject generic safety lists.
 
 Tone:
 firm, not dramatic
@@ -278,11 +530,30 @@ REPAIR_VS_REPLACE:
 
 Array of 5-6 hard-hitting strings.
 
+REPAIR_VS_REPLACE MUST MATCH TRADE:
+
+HVAC:
+- age (12+ years)
+- compressor failure
+- efficiency decline
+
+Plumbing:
+- recurring leaks
+- pipe material lifespan
+- hidden damage risk
+
+Electrical:
+- panel age
+- repeated breaker trips
+- wiring degradation
+
+---
+
+Reject generic repair advice.
+
 Rules:
-- MUST include:
-  - "over 12 years" threshold
-  - escalation language:
-    "what starts as a minor issue can become a multi-thousand-dollar failure"
+- MUST include escalation language:
+  "what starts as a minor issue can become a multi-thousand-dollar failure"
 
 ---
 
@@ -345,8 +616,8 @@ ID RULES (CRITICAL):
 
 - Use safe IDs like:
   - start_node
-  - airflow_check
-  - refrigerant_issue
+  - primary_system_check
+  - pressure_or_flow_issue
   - compressor_failure
   - electrical_fault
   - final_diagnosis
@@ -393,26 +664,26 @@ MANDATORY:
 STRUCTURE:
 
 Layer 1:
-- system_running
+- system_running / primary_failure_check
 
 Layer 2:
-- airflow_check
-- electrical_check (parallel branch)
+- primary_system_check (e.g., airflow for HVAC, pressure for Plumbing)
+- electrical_or_supply_check (parallel branch)
 
 Layer 3:
-- temp_check (from airflow branch)
-- breaker_or_voltage_check (from electrical branch)
+- performance_check
+- safety_or_load_check
 
 Layer 4 (refinement):
-- outdoor_unit_check
-- load_condition_check (heat / humidity impact)
+- external_factor_check
+- environmental_impact_check
 
-FINAL ENDPOINTS (must include at least 3):
+FINAL ENDPOINTS (must include at least 3 relevant to the trade):
 
-- airflow_restriction
-- refrigerant_issue
-- electrical_fault
-- control_issue
+- primary_component_failure (e.g., refrigerant_issue, burst_pipe)
+- secondary_component_failure (e.g., airflow_restriction, clogged_drain)
+- electrical_fault / power_loss
+- control_issue / fixture_failure
 
 ---
 
@@ -509,35 +780,79 @@ Within the JSON 'mechanism' and 'signal' fields for each cause, you MUST cover t
 
 REQUIRE:
 
-- 5 causes minimum
-- MUST cover exactly these 5 distinct failure categories:
-  - airflow
-  - refrigerant
-  - electrical
-  - load stress
-  - control logic
+- EXACTLY 4 causes
+- MUST cover distinct failure categories based on the trade rules above.
 
 ---
 
-EXAMPLE CAUSES TO INCLUDE:
+EXAMPLE OF GOOD MULTI-LINE DETAIL (ELECTRICAL):
 
-🌡️ Heat Load Overstress
-Mechanism: Extreme heat increases system demand beyond design capacity, exposing weak components.
-Signal: System works in mild conditions but fails during peak afternoon heat.
-
-⚙️ Intermittent Control Failure
-Mechanism: Thermostat or control board inconsistencies cause improper system cycling.
-Signal: System starts and stops unpredictably or fails during high load conditions.
-
----
-
-EXAMPLE LEVEL OF DETAIL:
-
-BAD:
-"Clogged filter reduces airflow"
-
-GOOD:
-"Restricted airflow reduces heat transfer efficiency, causing coil temperatures to drop and cooling capacity to collapse under heat load. This is often first noticed during peak afternoon temperatures when the system can no longer maintain setpoint."
+[
+  {
+    "cause": "Breaker Overload",
+    "signal": [
+      "Breaker trips repeatedly when high-load appliances (AC, microwave, dryer) are used together",
+      "Power loss occurs in specific areas during peak usage times rather than randomly"
+    ],
+    "severity": "high",
+    "mechanism": [
+      "Excessive current draw exceeds circuit capacity, triggering breaker protection to prevent overheating",
+      "More common in older electrical systems or when modern appliances exceed original load design"
+    ],
+    "escalation": [
+      "Repeated overload cycles weaken breaker reliability and wiring integrity",
+      "What starts as nuisance tripping can escalate into overheating wires and fire risk"
+    ]
+  },
+  {
+    "cause": "Wiring Fault",
+    "signal": [
+      "Buzzing sounds, burning odors, or visible sparking near outlets or panels",
+      "Lights flicker or power cuts in and out without a consistent trigger"
+    ],
+    "severity": "high",
+    "mechanism": [
+      "Damaged, loose, or degraded wiring disrupts stable current flow and creates resistance heat",
+      "Insulation breakdown, corrosion, or physical damage exposes conductors and increases failure risk"
+    ],
+    "escalation": [
+      "Heat buildup from resistance can ignite surrounding materials, leading to electrical fires",
+      "Exposure to live wiring significantly increases electrocution risk"
+    ]
+  },
+  {
+    "cause": "Component Failure",
+    "signal": [
+      "Specific outlets, switches, or fixtures stop working while others remain functional",
+      "Devices lose power intermittently or fail to operate consistently"
+    ],
+    "severity": "moderate",
+    "mechanism": [
+      "Internal failure of switches, outlets, or connections interrupts proper current distribution",
+      "Wear over time or poor installation can lead to loose contacts and inconsistent performance"
+    ],
+    "escalation": [
+      "Failing components can create localized overheating and damage connected devices",
+      "Left unresolved, the issue can spread to adjacent wiring or circuits"
+    ]
+  },
+  {
+    "cause": "Environmental or Surge Damage",
+    "signal": [
+      "Electrical issues begin immediately after storms, lightning, or power outages",
+      "Breakers trip or devices malfunction without a clear internal cause"
+    ],
+    "severity": "moderate",
+    "mechanism": [
+      "Voltage spikes from lightning or grid instability overwhelm circuit protection systems",
+      "Moisture intrusion or humidity exposure can degrade outdoor electrical components"
+    ],
+    "escalation": [
+      "Repeated surge exposure degrades wiring and sensitive components over time",
+      "Increases likelihood of major system failure or hidden electrical faults developing"
+    ]
+  }
+]
 
 ---
 
@@ -688,9 +1003,44 @@ Before output:
 
 - diagnostic_flow has ≥ 7 nodes
 - ≥ 3 endpoints exist
-- ≥ 5 top_causes exist
+- exactly 4 top_causes exist
 - stop_diy contains ≥ 5 items
 - repair_vs_replace includes escalation statement
+
+TOP_CAUSES VALIDATION:
+
+Before output:
+
+- Does each cause have ≥ 2 lines of mechanism?
+- Does each cause have ≥ 2 lines of signal?
+- Does each cause include escalation?
+
+If not → regenerate internally
+
+FINAL TRADE VALIDATION:
+
+Before output:
+
+- Does every section reflect the correct trade?
+- Are any foreign system terms present?
+
+If YES → FAIL and regenerate
+
+---
+
+Examples of failure:
+
+Plumbing page mentioning:
+- refrigerant
+- airflow
+
+Electrical page mentioning:
+- compressor
+- coils
+
+---
+
+Output must be PURE to the trade.
 
 If any condition fails → regenerate internally.
 
@@ -708,10 +1058,10 @@ export async function generateHsdPage({ vertical, symptom, city }: { vertical: s
   console.log(`[generateHsdPage] Generating diagnostic for ${vertical} - ${symptom} in ${city}...`);
 
   const prompt = MASTER_PROMPT_TEMPLATE
-    .replace('{{TRADE}}', vertical)
-    .replace('{{SYMPTOM}}', symptom)
-    .replace('{{CITY}}', city)
-    .replace('{{STATE}}', 'FL');
+    .replaceAll('{{TRADE}}', vertical)
+    .replaceAll('{{SYMPTOM}}', symptom)
+    .replaceAll('{{CITY}}', city)
+    .replaceAll('{{STATE}}', 'FL');
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -786,8 +1136,20 @@ function generateStubPayload(vertical: string, symptom: string, city: string) {
       top_causes: [
         {
           cause: "Refrigerant Leak",
-          mechanism: "Refrigerant is not consumed; low charge indicates a leak.",
-          signal: "Hissing noise or ice on coils",
+          mechanism: [
+            "Refrigerant is not consumed; low charge indicates a leak in the closed system.",
+            "Compressor runs longer to compensate for poor heat transfer.",
+            "High heat load accelerates the system failure rate."
+          ],
+          signal: [
+            "Hissing noise or ice building up on evaporator coils.",
+            "System runs continuously but vents blow room-temperature air.",
+            "Cooling completely fails during peak afternoon heat."
+          ],
+          escalation: [
+            "Running a severely low system will permanently burn out the compressor.",
+            "What starts as a leak repair becomes a full system replacement."
+          ],
           severity: "high"
         }
       ],

@@ -15,7 +15,8 @@ const MERMAID_CONFIG = Object.freeze({
     },
     themeVariables: {
         fontSize: '16px',
-        fontFamily: 'inherit'
+        fontFamily: 'inherit',
+        nodePadding: 30
     }
 });
 

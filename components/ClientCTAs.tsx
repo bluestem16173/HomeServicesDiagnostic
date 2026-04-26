@@ -71,7 +71,7 @@ export function HeroSection({ title, vertical, description }: { title: string, v
         {/* Left Side Content */}
         <div className="w-full md:w-2/3 px-8 md:px-12 lg:px-16 pt-32 pb-12 md:py-28 flex flex-col justify-center relative z-10 text-white">
           <h1 className="text-3xl md:text-5xl font-extrabold mb-4 leading-tight drop-shadow-md">
-            {title.split(' | ')[0].replace(/\s*[-—]\s*Let[’']s Find the Cause\.?/i, '').replace(/\s*Diagnostics/i, '').replace(/\??$/, '?')}
+            {title.split(' | ')[0].replace(/(?:\s*[-—]\s*|\s+)Let[’']s [Ff]ind the [Cc]ause\.?/i, '').replace(/\s*Diagnostics/i, '').replace(/\??$/, '?')}
             <br/>Let's Find the Cause.
           </h1>
           <p className="text-xl font-bold text-yellow-400 mb-4 tracking-wide drop-shadow-md">Fast. Accurate. Local.</p>

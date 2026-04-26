@@ -36,8 +36,26 @@ body {
 }
 
 .mermaid svg {
-  min-width: 1800px !important; /* Force extreme width to scale up the height proportionally */
+  min-width: 1800px !important;
+  min-height: 400px !important; /* Force vertical readability on long horizontal graphs */
   height: auto !important;
   max-width: none !important;
   margin: 0 auto;
+  overflow: visible !important;
+}
+
+/* Prevent text clipping in mermaid boxes */
+.mermaid foreignObject {
+  overflow: visible !important;
+}
+
+.mermaid .nodeLabel {
+  white-space: pre-wrap !important;
+  text-align: center !important;
+  line-height: 1.3 !important;
+  padding: 0 4px !important;
+}
+
+.mermaid .edgeLabel {
+  white-space: nowrap !important;
 }
