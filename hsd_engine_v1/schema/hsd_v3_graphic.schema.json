@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "required": ["slug", "page_type", "schema_version", "content"],
+  "properties": {
+    "schema_version": {
+      "enum": ["hsd_v3_graphic"]
+    },
+    "content": {
+      "required": [
+        "hero",
+        "quick_triage",
+        "diagnostic_flow",
+        "top_causes",
+        "stop_diy",
+        "repair_vs_replace",
+        "local_factors",
+        "internal_links"
+      ]
+    }
+  }
+}
