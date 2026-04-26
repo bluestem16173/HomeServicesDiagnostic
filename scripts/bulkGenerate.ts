@@ -55,6 +55,10 @@ async function run() {
           city: page.city
       });
 
+      if (result.schema_version !== "hsd_v3_graphic") {
+        throw new Error("WRONG ENGINE — ABORT");
+      }
+
       const validated = validateHsdSchema(result);
 
       await query(`
