@@ -8,8 +8,11 @@ export async function GET() {
   const baseUrl = 'https://homeservicediagnostics.com';
 
   // Base static routes
-  const routes = [
+  const routes: { url: string; priority: number; changefreq: string }[] = [
     { url: baseUrl, priority: 1.0, changefreq: 'weekly' },
+    { url: `${baseUrl}/hvac`, priority: 0.9, changefreq: 'weekly' },
+    { url: `${baseUrl}/plumbing`, priority: 0.9, changefreq: 'weekly' },
+    { url: `${baseUrl}/electrical`, priority: 0.9, changefreq: 'weekly' },
     { url: `${baseUrl}/about`, priority: 0.8, changefreq: 'monthly' },
     { url: `${baseUrl}/privacy`, priority: 0.5, changefreq: 'yearly' },
     { url: `${baseUrl}/terms`, priority: 0.5, changefreq: 'yearly' }
@@ -17,7 +20,7 @@ export async function GET() {
 
   try {
     const res = await query("SELECT slug FROM pages WHERE status = 'published'");
-    res.rows.forEach((row: any) => {
+    res.rows.forEach((row: { slug: string }) => {
       routes.push({
         url: `${baseUrl}${row.slug.startsWith('/') ? '' : '/'}${row.slug}`,
         priority: 0.7,

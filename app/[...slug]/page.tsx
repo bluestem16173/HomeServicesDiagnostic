@@ -1,14 +1,40 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { query } from "@/lib/db";
 import { Metadata } from "next";
 import Link from "next/link";
 import DiagnosticPageView from "@/components/DiagnosticPageView";
 import DynamicMermaid from "@/components/DynamicMermaid";
 import { StickyCTAClient, LocalCTAStrip, HeroSection } from "@/components/ClientCTAs";
+import ConclusionLeadCTA from "@/components/ConclusionLeadCTA";
 import { AlertTriangle, Info, Check, Wrench, ShieldAlert, FileText, Zap, Droplet, Snowflake, Thermometer } from "lucide-react";
 import { HsdSchema as DiagnosticSchema } from "@/src/lib/ai/prompts/generateHsdPage";
+import { normalizeHsdStorageJson } from "@/lib/normalizeHsdStorage";
+import { buildMermaid } from "@/lib/buildMermaid";
+import { FLOWS } from "@/lib/diagnosticFlows";
+import { lockPhase3Content } from "@/lib/phase3ContentLock";
+import {
+  SITE_URL,
+  formatCity,
+  formatCityFromSlug,
+  formatSymptom,
+  formatTrade,
+  getRelatedSymptoms,
+  normalizeSlug,
+} from "@/lib/seoLinks";
+import { normalizeCanonicalSlug } from "@/lib/canonicalSlugs";
+
+/** Canonical URLs use a leading slash; some DB rows were stored without it. */
+async function queryDiagnosticContentJson(slugPath: string) {
+  const alt = slugPath.startsWith("/") ? slugPath.slice(1) : `/${slugPath}`;
+  let res = await query("SELECT content_json FROM pages WHERE slug = $1", [slugPath]);
+  if (res.rows.length === 0 && alt !== slugPath) {
+    res = await query("SELECT content_json FROM pages WHERE slug = $1", [alt]);
+  }
+  return res;
+}
 
 export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{
@@ -23,20 +49,24 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 
   const slugPath = '/' + params.slug.join('/');
-  try {
-    const res = await query('SELECT content_json FROM pages WHERE slug = $1', [slugPath]);
-    if (res.rows.length === 0) return { title: 'Not Found' };
-    const contentJson = res.rows[0].content_json || {};
-    const content = contentJson.content || {};
-    const hero = content.hero || {};
-    
-    return {
-      title: (hero.headline || "Home Service Diagnostic").replace(/\s*Diagnostics?/i, ''),
-      description: hero.subhead || "Diagnostic results for your home service issue.",
-    };
-  } catch (error) {
-    return { title: 'Diagnostic Page' };
-  }
+  const canonicalSlug = normalizeCanonicalSlug(slugPath);
+  const [trade = "", symptom = "", city = ""] = params.slug;
+  const [, canonicalSymptom = symptom] = canonicalSlug.split("/").filter(Boolean);
+  const tradeLabel = formatTrade(trade);
+  const symptomLabel = formatSymptom(canonicalSymptom || "home service issue");
+  const cityLabel = formatCity(city || "your-area");
+
+  return {
+    title: `${symptomLabel} in ${cityLabel} | ${tradeLabel} Help`,
+    description: `Diagnose ${symptomLabel.toLowerCase()} in ${cityLabel}. Fast troubleshooting and local service guidance.`,
+    alternates: {
+      canonical: `${SITE_URL}${canonicalSlug}`,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
 }
 
 async function getWeather(cityQuery: string): Promise<{ temp: number, code: number, humidity: number, feelsLike: number } | null> {
@@ -63,66 +93,74 @@ async function getWeather(cityQuery: string): Promise<{ temp: number, code: numb
   return null;
 }
 
-function sanitizeId(id: string) {
-  const reserved = ["end", "start", "graph", "subgraph"];
-  if (reserved.includes(id.toLowerCase())) {
-    return `${id}_node`;
-  }
-  return id.replace(/[^a-zA-Z0-9_]/g, "_");
-}
+type InternalLink = {
+  slug: string;
+  label: string;
+};
 
-function buildMermaid(flow: any, temp?: number | null, vertical?: string, citySlug?: string) {
-  if (!flow || flow.type !== "mermaid") return "";
-  let chart = `graph ${flow.direction || "LR"}\n`;
-  const nodesToHighlight: string[] = [];
+async function getDeterministicInternalLinks(
+  slugPath: string,
+  trade: string,
+  symptom: string,
+  citySlug: string
+) {
+  const canonicalSlug = normalizeSlug(slugPath);
+  const sameSymptomResult = await query(
+    `
+      SELECT slug
+      FROM pages
+      WHERE status = 'published'
+        AND (slug LIKE $1 OR slug LIKE $2)
+        AND slug != $3
+        AND slug != $4
+      ORDER BY slug
+      LIMIT 6
+    `,
+    [`/${trade}/${symptom}/%`, `${trade}/${symptom}/%`, canonicalSlug, canonicalSlug.slice(1)]
+  );
 
-  if (flow.nodes) {
-    flow.nodes.forEach((n: any) => { 
-      const safeId = sanitizeId(n.id);
-      const safeLabel = n.label.replace(/"/g, "'");
-      chart += `  ${safeId}["${safeLabel}"]\n`; 
-      
-      if (vertical && citySlug && citySlug !== "your area") {
-        const urlSlug = safeId.replace(/_/g, '-');
-        chart += `  click ${safeId} href "/${vertical}/${urlSlug}/${citySlug}"\n`;
-      }
-      
-      // Dynamic weather highlighting logic
-      if (temp !== null && temp !== undefined) {
-        const lowerLabel = safeLabel.toLowerCase();
-        if (vertical === 'hvac') {
-          if (temp > 85 && (lowerLabel.includes("refrigerant") || lowerLabel.includes("airflow") || lowerLabel.includes("overload") || lowerLabel.includes("compressor") || lowerLabel.includes("capacitor") || lowerLabel.includes("heat load"))) {
-            nodesToHighlight.push(safeId);
-          } else if (temp < 50 && (lowerLabel.includes("defrost") || lowerLabel.includes("heat pump") || lowerLabel.includes("freeze") || lowerLabel.includes("coil"))) {
-            nodesToHighlight.push(safeId);
-          }
-        } else if (vertical === 'plumbing') {
-          if (temp < 32 && (lowerLabel.includes("pipe") || lowerLabel.includes("freeze") || lowerLabel.includes("burst") || lowerLabel.includes("insulation"))) {
-            nodesToHighlight.push(safeId);
-          }
-        }
-      }
-    });
-  }
-  if (flow.edges) {
-    flow.edges.forEach((e: any) => { 
-      const from = sanitizeId(e.from);
-      const to = sanitizeId(e.to);
-      const label = e.label ? `|${e.label.replace(/"/g, "'")}|` : "";
-      chart += `  ${from} -->${label} ${to}\n`; 
-    });
-  }
+  const sameSymptomCities = sameSymptomResult.rows.map((row: { slug: string }) => {
+    const slug = normalizeSlug(row.slug);
+    return {
+      slug,
+      label: formatCityFromSlug(slug),
+    };
+  });
 
-  // Inject styles for highlighted nodes
-  if (nodesToHighlight.length > 0) {
-    chart += `\n  %% Dynamic Weather Highlighting\n`;
-    chart += `  classDef weatherHighlight fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#991b1b;\n`;
-    nodesToHighlight.forEach(id => {
-      chart += `  class ${id} weatherHighlight;\n`;
-    });
-  }
+  const relatedSymptomSlugs = getRelatedSymptoms(trade, symptom).map(
+    (relatedSymptom) => `/${trade}/${relatedSymptom}/${citySlug}`
+  );
+  const relatedResult = relatedSymptomSlugs.length
+    ? await query(
+        `
+          SELECT slug
+          FROM pages
+          WHERE status = 'published'
+            AND (slug = ANY($1::text[]) OR slug = ANY($2::text[]))
+          ORDER BY slug
+          LIMIT 6
+        `,
+        [relatedSymptomSlugs, relatedSymptomSlugs.map((slug) => slug.slice(1))]
+      )
+    : { rows: [] };
 
-  return chart;
+  const relatedSymptoms = relatedResult.rows.map((row: { slug: string }) => {
+    const slug = normalizeSlug(row.slug);
+    const [, relatedSymptom = ""] = slug.split("/").filter(Boolean);
+    return {
+      slug,
+      label: formatSymptom(relatedSymptom),
+    };
+  });
+
+  return {
+    tradeHub: {
+      slug: `/${trade}`,
+      label: `${formatTrade(trade)} Diagnostic Hub`,
+    },
+    sameSymptomCities,
+    relatedSymptoms,
+  };
 }
 
 export default async function DiagnosticPage(props: PageProps) {
@@ -130,44 +168,84 @@ export default async function DiagnosticPage(props: PageProps) {
   if (!params.slug) return notFound();
 
   const slugPath = '/' + (params.slug || []).join('/');
+  const canonicalSlug = normalizeCanonicalSlug(slugPath);
+  if (canonicalSlug !== slugPath) {
+    redirect(canonicalSlug);
+  }
   let data = null;
 
   try {
-    const res = await query('SELECT content_json FROM pages WHERE slug = $1', [slugPath]);
+    const res = await queryDiagnosticContentJson(slugPath);
     if (res.rows.length === 0) notFound();
     data = res.rows[0].content_json;
   } catch (error) {
+    console.error("[diagnostic] DB error for", slugPath, error);
     notFound();
   }
 
-  const parsed = DiagnosticSchema.safeParse(data);
+  const normalized = normalizeHsdStorageJson(data);
+  const parsed = DiagnosticSchema.safeParse(normalized);
 
   if (!parsed.success) {
     console.error("Zod Schema Validation Failed for:", slugPath);
-    console.error(parsed.error);
+    console.error(parsed.error.flatten());
     return notFound();
   }
 
-  const content = parsed.data.content;
   const pageData = parsed.data;
+  const content = lockPhase3Content(parsed.data.content);
 
   const vertical = params.slug[0] || "hvac";
-  const citySlug = params.slug[2] || "your area";
-  const cityContext = citySlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ').replace(' Fl', ', FL');
-  
+  const symptomSlug = params.slug[1] || "issue";
+  const citySlug = params.slug[2] || "your-area";
+  const cityContext = formatCity(citySlug);
   const citySearchQuery = citySlug.split('-').slice(0, -1).join(' '); 
   const weather = vertical !== 'plumbing' ? await getWeather(citySearchQuery) : null;
+  const seoLinks = await getDeterministicInternalLinks(slugPath, vertical, symptomSlug, citySlug);
 
-  const mermaidString = content.diagnostic_flow ? buildMermaid(content.diagnostic_flow, weather?.temp, vertical, citySlug) : "";
+  const flow = FLOWS[content.flow_type];
+  const mermaidString = buildMermaid(flow);
+
+  const slugIssueTitle = `${(params.slug[1] || "issue")
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ")
+    .replace(/\bAc\b/g, "AC")
+    .replace(/\bHvac\b/g, "HVAC")}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    serviceType: formatSymptom(symptomSlug),
+    areaServed: cityContext,
+    provider: {
+      "@type": "LocalBusiness",
+      name: "Home Service Diagnostics",
+      url: SITE_URL,
+    },
+    url: `${SITE_URL}${slugPath}`,
+  };
 
   return (
     <main className="min-h-screen bg-gray-100 text-slate-900 pb-24 font-sans selection:bg-blue-200 selection:text-blue-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="max-w-[1200px] mx-auto bg-white shadow-2xl my-8 md:my-12 overflow-hidden border border-gray-300">
+        <nav className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4 text-sm font-semibold text-slate-700 sm:flex-row sm:items-center sm:justify-between md:px-8">
+          <Link href={seoLinks.tradeHub.slug} className="text-blue-700 hover:underline">
+            &larr; Back to {seoLinks.tradeHub.label}
+          </Link>
+          <Link href="/" className="text-slate-600 hover:text-slate-900 hover:underline">
+            Home Service Diagnostics
+          </Link>
+        </nav>
         
-        {/* 1. HERO SECTION */}
+        {/* 1. HERO SECTION — prefer JSON hero; slug title is fallback only */}
         <HeroSection 
-          title={`${(params.slug[1] || "issue").split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').replace(/\bAc\b/g, 'AC').replace(/\bHvac\b/g, 'HVAC')}`} 
-          description={content.hero?.subhead || (pageData as any).seo?.description} 
+          title={content.hero.headline?.trim() ? content.hero.headline : slugIssueTitle} 
+          description={content.hero.subhead || (pageData as { seo?: { description?: string } }).seo?.description} 
           vertical={vertical} 
         />
 
@@ -183,9 +261,11 @@ export default async function DiagnosticPage(props: PageProps) {
                 <h2 className="text-[11px] font-bold tracking-widest text-blue-900 uppercase m-0">3. Diagnostic Flow (Visual Flowchart)</h2>
                 <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">*Interactive Chart</span>
               </div>
-              <div className="bg-slate-50 border border-blue-100 rounded-lg p-4 flex-grow flex flex-col items-center justify-center overflow-hidden shadow-inner">
+              <div className="bg-slate-50 border border-blue-100 rounded-lg p-4 flex-grow flex flex-col items-stretch justify-start w-full min-w-0 shadow-inner">
                 {mermaidString && (
-                  <DynamicMermaid chart={mermaidString} keyword={""} />
+                  <div className="w-full max-w-full min-w-0">
+                    <DynamicMermaid chart={mermaidString} />
+                  </div>
                 )}
                 {content.local_factors && content.local_factors.length > 0 && (
                   <div className="mt-6 text-[11px] md:text-xs font-semibold text-slate-600 bg-white border border-blue-100 px-4 py-3 rounded-md max-w-4xl mx-auto shadow-sm w-full">
@@ -201,7 +281,7 @@ export default async function DiagnosticPage(props: PageProps) {
             <div className="lg:col-span-4 flex flex-col">
               <h2 className="text-[11px] font-bold tracking-widest text-blue-900 uppercase mb-4 border-b pb-2">4. Diagnostic Conclusion</h2>
               <div className="flex-grow">
-                <DiagnosticConclusionCard content={content} symptom={params.slug?.[1]?.replace(/-/g, ' ') || "your issue"} vertical={vertical} weather={weather} />
+                <DiagnosticConclusionCard content={content} symptom={params.slug?.[1]?.replace(/-/g, ' ') || "your issue"} vertical={vertical} cityContext={cityContext} weather={weather} />
               </div>
             </div>
           </div>
@@ -221,20 +301,7 @@ export default async function DiagnosticPage(props: PageProps) {
             <LocalCTAStrip vertical={vertical} cityContext={cityContext} />
           </div>
           
-          {/* 10. RELATED TOPICS */}
-          <div className="border-t border-gray-200 pt-6 mt-8">
-             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <span className="text-[11px] font-bold tracking-widest text-blue-900 uppercase">10. Related Topics / Internal Links</span>
-                <div className="flex flex-wrap gap-3 text-xs text-blue-600 font-medium justify-center">
-                   {content.internal_links?.related_symptoms?.map((link: string, i: number) => (
-                     <Link key={i} href={link} className="hover:underline">{link.split('/').pop()?.replace(/-/g, ' ')}</Link>
-                   ))}
-                   {content.internal_links?.system_pages?.map((link: string, i: number) => (
-                     <Link key={i+100} href={link} className="hover:underline">{link.split('/').pop()?.replace(/-/g, ' ')}</Link>
-                   ))}
-                </div>
-             </div>
-          </div>
+          <InternalLinkingBlock links={seoLinks} />
 
         </div>
       </div>
@@ -247,6 +314,64 @@ export default async function DiagnosticPage(props: PageProps) {
 // ---------------------------------------------------------
 // UI COMPONENTS
 // ---------------------------------------------------------
+
+function InternalLinkingBlock({
+  links,
+}: {
+  links: {
+    tradeHub: InternalLink;
+    sameSymptomCities: InternalLink[];
+    relatedSymptoms: InternalLink[];
+  };
+}) {
+  const sections = [
+    {
+      title: "Same Issue In Nearby Cities",
+      links: links.sameSymptomCities,
+    },
+    {
+      title: "Related Symptoms",
+      links: links.relatedSymptoms,
+    },
+    {
+      title: "Trade Hub",
+      links: [links.tradeHub],
+    },
+  ];
+
+  return (
+    <section className="border-t border-gray-200 pt-6 mt-8">
+      <div className="mb-4">
+        <h2 className="text-[11px] font-bold tracking-widest text-blue-900 uppercase">
+          10. Related Topics / Internal Links
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Explore the same problem in nearby cities, related diagnostics, and the full trade hub.
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {sections.map((section) => (
+          <div key={section.title} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+              {section.title}
+            </h3>
+            <div className="flex flex-col gap-2 text-sm">
+              {section.links.length > 0 ? (
+                section.links.map((link) => (
+                  <Link key={link.slug} href={link.slug} className="font-medium text-blue-700 hover:underline">
+                    {link.label}
+                  </Link>
+                ))
+              ) : (
+                <span className="text-xs text-slate-500">More pages coming soon.</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function QuickTriageBlock({ content, vertical, weather }: { content: string[], vertical: string, weather?: { temp: number, code: number, humidity: number, feelsLike: number } | null }) {
   if (!content || !content.length) return null;
@@ -418,7 +543,7 @@ export function RepairVsReplace({ content }: { content: string[] | Record<string
   );
 }
 
-export function DiagnosticConclusionCard({ content, symptom, vertical, weather }: { content: any; symptom: string; vertical: string; weather: any }) {
+export function DiagnosticConclusionCard({ content, symptom, vertical, cityContext, weather }: { content: any; symptom: string; vertical: string; cityContext: string; weather: any }) {
   let primaryCause = content.top_causes?.[0];
   const escalation = Array.isArray(content.repair_vs_replace) 
     ? content.repair_vs_replace.find((c: string) => c.toLowerCase().includes("minor issue")) || content.repair_vs_replace[content.repair_vs_replace.length - 1]
@@ -499,7 +624,7 @@ export function DiagnosticConclusionCard({ content, symptom, vertical, weather }
         <div className="mb-5">
           <p className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2 border-b pb-1">If you're noticing:</p>
           <ul className="space-y-1.5 text-xs text-slate-600 font-medium">
-            {(Array.isArray(content.quick_triage) ? content.quick_triage : (typeof content.quick_triage === 'object' ? Object.values(content.quick_triage) : [])).slice(0, 3).map((t: any, i: number) => (
+            {(Array.isArray(content.quick_triage) ? content.quick_triage : (typeof content.quick_triage === 'object' ? Object.values(content.quick_triage) : [])).map((t: any, i: number) => (
               <li key={i} className="flex items-start gap-1.5">
                 <Check className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
                 <span>{t}</span>
@@ -523,9 +648,7 @@ export function DiagnosticConclusionCard({ content, symptom, vertical, weather }
         </div>
 
         {/* ACTION BUTTON */}
-        <a href="tel:18339930933" className="w-full block text-center bg-[#1e3a8a] text-white font-bold text-[13px] py-3.5 rounded hover:bg-blue-800 transition-colors shadow-sm uppercase tracking-wide">
-          Get This Checked Before It Gets Worse
-        </a>
+        <ConclusionLeadCTA vertical={vertical} cityContext={cityContext} />
       </div>
     </div>
   );

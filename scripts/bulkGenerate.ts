@@ -1,82 +1,160 @@
-import { query } from '../lib/db';
-import { generateHsdPage, validateHsdSchema } from '../src/lib/ai/prompts/generateHsdPage';
-
-const pagesToGenerate = [
-  // HVAC - 10 Pages
-  { slug: '/hvac/ac-not-cooling/fort-myers-fl', vertical: 'hvac', symptom: 'ac not cooling', city: 'Fort Myers, FL' },
-  { slug: '/hvac/ac-blowing-warm-air/naples-fl', vertical: 'hvac', symptom: 'ac blowing warm air', city: 'Naples, FL' },
-  { slug: '/hvac/ac-freezing-up/cape-coral-fl', vertical: 'hvac', symptom: 'ac freezing up', city: 'Cape Coral, FL' },
-  { slug: '/hvac/ac-making-loud-noise/bonita-springs-fl', vertical: 'hvac', symptom: 'ac making loud noise', city: 'Bonita Springs, FL' },
-  { slug: '/hvac/ac-wont-turn-on/lehigh-acres-fl', vertical: 'hvac', symptom: 'ac wont turn on', city: 'Lehigh Acres, FL' },
-  { slug: '/hvac/ac-short-cycling/punta-gorda-fl', vertical: 'hvac', symptom: 'ac short cycling', city: 'Punta Gorda, FL' },
-  { slug: '/hvac/ac-leaking-water/fort-myers-beach-fl', vertical: 'hvac', symptom: 'ac leaking water', city: 'Fort Myers Beach, FL' },
-  { slug: '/hvac/ac-smells-bad/estero-fl', vertical: 'hvac', symptom: 'ac smells bad', city: 'Estero, FL' },
-  { slug: '/hvac/thermostat-blank/sanibel-fl', vertical: 'hvac', symptom: 'thermostat blank', city: 'Sanibel, FL' },
-  { slug: '/hvac/high-electric-bill/port-charlotte-fl', vertical: 'hvac', symptom: 'high electric bill', city: 'Port Charlotte, FL' },
-
-  // Plumbing - 10 Pages
-  { slug: '/plumbing/water-heater-leaking/fort-myers-fl', vertical: 'plumbing', symptom: 'water heater leaking', city: 'Fort Myers, FL' },
-  { slug: '/plumbing/no-hot-water/naples-fl', vertical: 'plumbing', symptom: 'no hot water', city: 'Naples, FL' },
-  { slug: '/plumbing/toilet-wont-flush/cape-coral-fl', vertical: 'plumbing', symptom: 'toilet wont flush', city: 'Cape Coral, FL' },
-  { slug: '/plumbing/clogged-drain/bonita-springs-fl', vertical: 'plumbing', symptom: 'clogged drain', city: 'Bonita Springs, FL' },
-  { slug: '/plumbing/low-water-pressure/lehigh-acres-fl', vertical: 'plumbing', symptom: 'low water pressure', city: 'Lehigh Acres, FL' },
-  { slug: '/plumbing/garbage-disposal-jammed/punta-gorda-fl', vertical: 'plumbing', symptom: 'garbage disposal jammed', city: 'Punta Gorda, FL' },
-  { slug: '/plumbing/pipe-burst/fort-myers-beach-fl', vertical: 'plumbing', symptom: 'pipe burst', city: 'Fort Myers Beach, FL' },
-  { slug: '/plumbing/running-toilet/estero-fl', vertical: 'plumbing', symptom: 'running toilet', city: 'Estero, FL' },
-  { slug: '/plumbing/sewer-backup/sanibel-fl', vertical: 'plumbing', symptom: 'sewer backup', city: 'Sanibel, FL' },
-  { slug: '/plumbing/water-softener-issues/port-charlotte-fl', vertical: 'plumbing', symptom: 'water softener issues', city: 'Port Charlotte, FL' },
-
-  // Electrical - 10 Pages
-  { slug: '/electrical/breaker-keeps-tripping/fort-myers-fl', vertical: 'electrical', symptom: 'breaker keeps tripping', city: 'Fort Myers, FL' },
-  { slug: '/electrical/outlets-not-working/naples-fl', vertical: 'electrical', symptom: 'outlets not working', city: 'Naples, FL' },
-  { slug: '/electrical/lights-flickering/cape-coral-fl', vertical: 'electrical', symptom: 'lights flickering', city: 'Cape Coral, FL' },
-  { slug: '/electrical/main-panel-buzzing/bonita-springs-fl', vertical: 'electrical', symptom: 'main panel buzzing', city: 'Bonita Springs, FL' },
-  { slug: '/electrical/power-outage-one-room/lehigh-acres-fl', vertical: 'electrical', symptom: 'power outage one room', city: 'Lehigh Acres, FL' },
-  { slug: '/electrical/gfci-wont-reset/punta-gorda-fl', vertical: 'electrical', symptom: 'gfci wont reset', city: 'Punta Gorda, FL' },
-  { slug: '/electrical/smell-burning-plastic/fort-myers-beach-fl', vertical: 'electrical', symptom: 'smell burning plastic', city: 'Fort Myers Beach, FL' },
-  { slug: '/electrical/sparks-from-outlet/estero-fl', vertical: 'electrical', symptom: 'sparks from outlet', city: 'Estero, FL' },
-  { slug: '/electrical/generator-wont-start/sanibel-fl', vertical: 'electrical', symptom: 'generator wont start', city: 'Sanibel, FL' },
-  { slug: '/electrical/ceiling-fan-wobbly/port-charlotte-fl', vertical: 'electrical', symptom: 'ceiling fan wobbly', city: 'Port Charlotte, FL' }
-];
+export {};
 
 async function run() {
-  const limitArgIndex = process.argv.indexOf('--limit');
-  const limit = limitArgIndex > -1 ? parseInt(process.argv[limitArgIndex + 1], 10) : pagesToGenerate.length;
-  const pagesToProcess = pagesToGenerate.slice(0, limit);
-
-  console.log(`Starting bulk generation of ${pagesToProcess.length} SEO pages...`);
-  
-  for (const page of pagesToProcess) {
+  try {
+    process.loadEnvFile(".env.local");
+  } catch {
     try {
-      console.log(`\nProcessing: ${page.slug}`);
+      process.loadEnvFile(".env");
+    } catch {
+      /* no env file */
+    }
+  }
+
+  if (!process.env.DATABASE_URL || typeof process.env.DATABASE_URL !== "string") {
+    console.error("❌ DATABASE_URL missing");
+    process.exit(1);
+  }
+
+  const { query } = await import("../lib/db");
+  const { normalizeCanonicalSlug, normalizeSymptom } = await import(
+    "../lib/canonicalSlugs"
+  );
+  const { generateHsdPage, validateHsdSchema } = await import(
+    "../src/lib/ai/prompts/generateHsdPage"
+  );
+
+  // 🔥 LIMIT CONTROL
+  const limitArgIndex = process.argv.indexOf("--limit");
+  const limit =
+    limitArgIndex > -1
+      ? parseInt(process.argv[limitArgIndex + 1], 10)
+      : 45;
+
+  const tradesArgIndex = process.argv.indexOf("--trades");
+  const trades =
+    tradesArgIndex > -1
+      ? process.argv[tradesArgIndex + 1]
+          .split(",")
+          .map((trade) => trade.trim().toLowerCase())
+          .filter(Boolean)
+      : [];
+
+  // 🔥 LOAD FROM DB (THIS IS THE KEY CHANGE)
+  const { rows } = await query(
+    `
+    SELECT slug
+    FROM page_queue
+    WHERE status = 'pending'
+      AND (
+        cardinality($2::text[]) = 0
+        OR split_part(trim(leading '/' from slug), '/', 1) = ANY($2::text[])
+      )
+    ORDER BY priority DESC NULLS LAST
+    LIMIT $1
+  `,
+    [limit, trades]
+  );
+
+  if (!rows.length) {
+    console.log("⚠️ No pending pages found.");
+    return;
+  }
+
+  console.log(
+    `🚀 Generating ${rows.length} pages${trades.length ? ` for ${trades.join(", ")}` : ""}...`
+  );
+
+  function normalizeSlug(slug: string) {
+    return slug.startsWith("/") ? slug : `/${slug}`;
+  }
+
+  function parseSlug(slug: string) {
+    const parts = normalizeCanonicalSlug(normalizeSlug(slug)).split("/");
+
+    return {
+      vertical: parts[1],
+      symptom: normalizeSymptom(parts[1], parts[2]).replace(/-/g, " "),
+      city: parts[3]
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    };
+  }
+
+  for (const row of rows) {
+    const queueSlug = normalizeSlug(row.slug);
+    const slug = normalizeCanonicalSlug(queueSlug);
+
+    try {
+      const { vertical, symptom, city } = parseSlug(slug);
+
+      console.log(`\n⚡ ${vertical.toUpperCase()} → ${symptom} (${city})`);
+
       const result = await generateHsdPage({
-          vertical: page.vertical,
-          symptom: page.symptom,
-          city: page.city
+        vertical,
+        symptom,
+        city
       });
 
+      // 🔒 HARD GUARDS (CRITICAL)
       if (result.schema_version !== "hsd_v3_graphic") {
-        throw new Error("WRONG ENGINE — ABORT");
+        throw new Error("WRONG SCHEMA VERSION");
       }
 
       const validated = validateHsdSchema(result);
 
-      await query(`
+      const content = validated.content;
+
+      if (
+        !content?.flow_type ||
+        content.diagnostic_flow !== null ||
+        content.top_causes.length !== 4 ||
+        content.stop_diy.length < 5
+      ) {
+        throw new Error("WEAK OR INVALID OUTPUT");
+      }
+
+      // 💾 SAVE + PUBLISH
+      await query(
+        `
         INSERT INTO pages (slug, page_type, status, content_json)
         VALUES ($1, 'city', 'published', $2)
-        ON CONFLICT (slug) DO UPDATE SET content_json = $2, status = 'published'
-      `, [page.slug, validated]);
+        ON CONFLICT (slug)
+        DO UPDATE SET content_json = $2, status = 'published'
+      `,
+        [slug, validated]
+      );
 
-      console.log(`✅ Successfully saved: ${page.slug}`);
-      
-      // Delay to avoid hitting OpenAI rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // 🔄 MARK QUEUE COMPLETE
+      await query(
+        `
+        UPDATE page_queue
+        SET status = 'done', last_error = NULL
+        WHERE slug = $1 OR slug = $2
+      `,
+        [queueSlug, queueSlug.slice(1)]
+      );
+
+      console.log(`✅ Published: ${slug}`);
+
+      // ⚡ RATE LIMIT SAFE (FAST)
+      await new Promise((r) => setTimeout(r, 800));
+
     } catch (error) {
-      console.error(`❌ Failed to process ${page.slug}:`, error);
+      console.error(`❌ Failed: ${slug}`, error);
+
+      await query(
+        `
+        UPDATE page_queue
+        SET status = 'failed', last_error = $2
+        WHERE slug = $1
+      `,
+        [slug, String(error)]
+      );
     }
   }
 
-  console.log("\nBulk page generation complete!");
+  console.log("\n🔥 DONE — Pages generated and live");
 }
 
-run();
+void run();

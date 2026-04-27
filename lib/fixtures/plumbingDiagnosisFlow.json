@@ -1,0 +1,27 @@
+{
+  "type": "mermaid",
+  "direction": "LR",
+  "nodes": [
+    { "id": "start", "label": "Start Diagnosis" },
+    { "id": "flow_check", "label": "Water Flow Present?" },
+    { "id": "supply_issue", "label": "Supply Issue" },
+    { "id": "pressure_check", "label": "Pressure Normal?" },
+    { "id": "pressure_issue", "label": "Pressure Imbalance" },
+    { "id": "drain_check", "label": "Drainage Working?" },
+    { "id": "clog_issue", "label": "Clog or Blockage" },
+    { "id": "leak_check", "label": "Leak Detected?" },
+    { "id": "leak_issue", "label": "Pipe Leak" },
+    { "id": "fixture_issue", "label": "Fixture Failure" }
+  ],
+  "edges": [
+    { "from": "start", "to": "flow_check" },
+    { "from": "flow_check", "to": "supply_issue", "label": "No" },
+    { "from": "flow_check", "to": "pressure_check", "label": "Yes" },
+    { "from": "pressure_check", "to": "pressure_issue", "label": "No" },
+    { "from": "pressure_check", "to": "drain_check", "label": "Yes" },
+    { "from": "drain_check", "to": "clog_issue", "label": "No" },
+    { "from": "drain_check", "to": "leak_check", "label": "Yes" },
+    { "from": "leak_check", "to": "leak_issue", "label": "Yes" },
+    { "from": "leak_check", "to": "fixture_issue", "label": "No" }
+  ]
+}

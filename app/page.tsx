@@ -73,9 +73,9 @@ export default async function HomePage() {
 
           {/* NAV LINKS */}
           <nav className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-300">
-            <Link href="#" className="hover:text-white transition-colors">HVAC</Link>
-            <Link href="#" className="hover:text-white transition-colors">Plumbing</Link>
-            <Link href="#" className="hover:text-white transition-colors">Electrical</Link>
+            <Link href="/hvac" className="hover:text-white transition-colors">HVAC</Link>
+            <Link href="/plumbing" className="hover:text-white transition-colors">Plumbing</Link>
+            <Link href="/electrical" className="hover:text-white transition-colors">Electrical</Link>
             <Link href="#" className="hover:text-white transition-colors">Windows</Link>
             <Link href="#" className="hover:text-white transition-colors">Roofing</Link>
             <Link href="/about" className="hover:text-white transition-colors flex items-center gap-1">
@@ -85,7 +85,7 @@ export default async function HomePage() {
 
           {/* HEADER BUTTONS */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="#" className="bg-[#facc15] hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 transition-all">
+            <Link href="/hvac" className="bg-[#facc15] hover:bg-yellow-500 text-black px-4 py-2 rounded-md text-sm font-semibold flex items-center gap-2 transition-all">
               <Stethoscope className="w-4 h-4" />
               Diagnose a Problem
             </Link>
@@ -173,7 +173,7 @@ export default async function HomePage() {
             <div className="p-6 pt-10 flex flex-col flex-grow">
               <h3 className="text-xl font-bold mb-2">HVAC Problems</h3>
               <p className="text-gray-400 text-sm mb-6 leading-relaxed">AC not cooling, strange noises, high bills, and more.</p>
-              <Link href="#" className="text-blue-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
+              <Link href="/hvac" className="text-blue-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
                 Diagnose Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -193,7 +193,7 @@ export default async function HomePage() {
             <div className="p-6 pt-10 flex flex-col flex-grow">
               <h3 className="text-xl font-bold mb-2">Plumbing Issues</h3>
               <p className="text-gray-400 text-sm mb-6 leading-relaxed">Leaks, low pressure, no hot water, and more.</p>
-              <Link href="#" className="text-blue-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
+              <Link href="/plumbing" className="text-blue-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
                 Diagnose Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -213,7 +213,7 @@ export default async function HomePage() {
             <div className="p-6 pt-10 flex flex-col flex-grow">
               <h3 className="text-xl font-bold mb-2">Electrical Problems</h3>
               <p className="text-gray-400 text-sm mb-6 leading-relaxed">Power loss, tripped breakers, flickering lights, and more.</p>
-              <Link href="#" className="text-yellow-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
+              <Link href="/electrical" className="text-yellow-400 font-medium flex items-center gap-2 text-sm tracking-wide mt-auto">
                 Diagnose Now <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>

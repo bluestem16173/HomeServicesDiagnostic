@@ -54,16 +54,18 @@ export default function LeadModal({ isOpen, onClose, serviceCategory = "Home Ser
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-[#0b1121] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4">
+      <div className="bg-[#0b1121] border border-white/10 w-full max-w-md max-h-[92vh] rounded-2xl shadow-2xl relative overflow-y-auto animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-900/50 to-[#0b1121] p-6 border-b border-white/10 relative">
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 rounded-full border border-white/20 bg-black/70 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white shadow-lg transition-colors hover:bg-black hover:border-white/40"
+            aria-label="Close lead form"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
+            <span>Close</span>
           </button>
           <h2 className="text-2xl font-bold text-white mb-1">Get Expert Help</h2>
           <p className="text-sm text-gray-300">
